@@ -1,11 +1,13 @@
 <!DOCTYPE html>
 <html lang="fr"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<title>CardioMéta — HTA et diabète</title><meta name="theme-color" content="#10222b">
-<link rel="stylesheet" href="css/style.css"></head><body>
-<header><div class="seg"><button id="t_hta" class="on">HTA</button><button id="t_dm">Diabète</button></div><div id="pb"></div></header>
+<title>CardioMéta</title><meta name="theme-color" content="#10222b">
+<link rel="manifest" href="manifest.webmanifest"><link rel="icon" href="icon-192.png"><link rel="apple-touch-icon" href="icon-192.png">
+<meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes">
+<link rel="stylesheet" href="style.css"></head><body>
+<header><div class="seg"><button id="t_hta" class="on">HTA</button><button id="t_dm">Diabète</button></div><div id="pb"></div><button id="inst" type="button">Installer l’application</button><div id="ios">Sur iPhone : Partager, puis « Sur l’écran d’accueil ».</div></header>
 <main><div id="form"></div></main>
 <button id="bar" type="button">Verdict</button>
 <section id="sheet" aria-live="polite"><button id="close" type="button">Fermer</button><div id="res"></div></section>
-<script src="js/core.js"></script><script src="js/hta.js"></script><script src="js/diabete.js"></script><script src="js/app.js"></script>
+<script src="core.js"></script><script src="hta.js"></script><script src="diabete.js"></script><script src="app.js"></script>
 </body></html>

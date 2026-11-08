@@ -8,3 +8,10 @@ function run(){const r=M[cur].run(),D=dfg(),i=bmi(),s=[];
 $('t_hta').onclick=()=>go('hta');$('t_dm').onclick=()=>go('dm');
 $('bar').onclick=()=>$('sheet').classList.add('open');$('close').onclick=()=>$('sheet').classList.remove('open');
 document.addEventListener('input',run);document.addEventListener('change',run);run();
+// Installation (PWA)
+let dp=null;
+addEventListener('beforeinstallprompt',e=>{e.preventDefault();dp=e;$('inst').classList.add('on')});
+$('inst').onclick=async()=>{if(!dp)return;dp.prompt();await dp.userChoice;dp=null;$('inst').classList.remove('on')};
+addEventListener('appinstalled',()=>$('inst').classList.remove('on'));
+if(/iphone|ipad/i.test(navigator.userAgent)&&!navigator.standalone)$('ios').style.display='block';
+if('serviceWorker'in navigator&&location.protocol.startsWith('http'))addEventListener('load',()=>navigator.serviceWorker.register('sw.js').catch(()=>{}));
