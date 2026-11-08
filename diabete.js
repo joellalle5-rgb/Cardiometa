@@ -1,33 +1,35 @@
-const DM={fields:
-grp('Glycémies',F('gj','Glycémie veineuse à jeun','g/L')+F('ga','Glycémie aléatoire','g/L')+F('hgpo','HGPO 2 h','g/L')+F('hba1c','HbA1c (facultative)','%')+KS([['jeune','Jeûne ≥ 8 h confirmé',1],['sym','Symptômes cardinaux (polyurie, polydipsie, amaigrissement)'],['conf','Même test déjà répété et anormal'],['interf','Interférence HbA1c : drépanocytose, anémie, carence martiale, transfusion, IRC terminale']]),1)+
-grp('Typage',KS([['brutal','Début brutal (quelques semaines)'],['amai','Amaigrissement marqué'],['autoimm','Maladie auto-immune associée']])+`<label class="f">Cétonurie<select id="cet"><option value="nr">Non recherchée</option><option value="a">Absente</option><option value="p">Présente</option></select></label><label class="f">Auto-anticorps<select id="ab"><option value="nf">Non dosés</option><option value="n">Négatifs</option><option value="p">Au moins un positif</option></select></label>`)+
-grp('Contexte',KS([['fra','Fragile ou dépendant'],['comorb','Comorbidité sévère ou espérance de vie < 5 ans'],['hypo','Hypoglycémie sévère passée']])),
-run(){const a=n('age'),gj=n('gj'),ga=n('ga'),hg=n('hgpo'),jo=ck('jeune'),D=dfg(),pg=ck('preg');let hb=n('hba1c'),h=D.w?card('a','Créatinine',D.w):'';
- if(a<18)return{head:'Adulte uniquement',html:card('a','Adulte uniquement','Cette suite s’adresse aux patients de 18 ans et plus.')};
- if(ck('interf')&&!isNaN(hb)){h+=card('a','HbA1c écartée','Interférence déclarée : seules les glycémies sont retenues.');hb=NaN}
- const pos=[];if(jo&&gj>=1.26)pos.push('glycémie à jeun '+fx(gj,2));if(hg>=2)pos.push('HGPO '+fx(hg,2));if(hb>=6.5)pos.push('HbA1c '+fx(hb,1)+' %');
- const gal=Math.max(isNaN(ga)?0:ga,jo||isNaN(gj)?0:gj);
- if(isNaN(gj)&&isNaN(ga)&&isNaN(hg)&&isNaN(hb))return{head:'Saisir une glycémie',html:h+card('i','Saisir une glycémie','Glycémie à jeun, aléatoire ou HGPO ; l’HbA1c est facultative.')};
- let dm=false,head;
- if(gal>=2&&ck('sym')||pos.length>=2||(pos.length===1&&ck('conf'))){dm=true;head='Diabète confirmé';h+=card('u'.replace('u','a'),head,pos.join(' + ')||'Glycémie aléatoire ≥ 2,00 g/L avec symptômes.')}
- else if(pos.length===1){head='Diabète probable, à confirmer';h+=card('a',head,pos[0]+' : confirmer par un second dosage veineux.')}
- else if((jo&&gj>=1)||(hg>=1.4)||(hb>=5.7)){head='Prédiabète';h+=card('i',head,'Mode de vie, perte de poids de 5–7 % si surpoids, contrôle annuel.')}
- else{head='Pas de critère de diabète';h+=card('o',head,'Valeurs sous les seuils.')}
- const mx=Math.max(isNaN(gj)?0:gj,isNaN(ga)?0:ga,isNaN(hg)?0:hg);
- if(mx>=2.5)h+=card(mx>=3&&ck('sym')?'u':'a','Hyperglycémie marquée','Faire la cétonurie. Cétonurie ≥ 2+ avec dyspnée, vomissements ou obnubilation : acidocétose présumée, urgence (module Urgences à venir).');
- if(!dm)return{head,html:h};
- // Typage : un score DT1 élevé n'est pas écrasé par des anticorps négatifs
- const i=bmi(),sc=(a<35?1:0)+(i<25?1:0)+(ck('brutal')?1:0)+(ck('amai')?1:0)+($('cet').value==='p'?2:0)+(ck('autoimm')?1:0),ab=$('ab').value;let T;
- if(ab==='p')T=a>30&&!ck('brutal')&&!ck('amai')?'LADA':'DT1';else if(sc>=4)T='DT1';else T='DT2';
- h+=card(T==='DT2'?'i':'a','Typage : '+(T==='DT1'&&ab!=='p'?'DT1 ou diabète cétosique à explorer':T),'Score d’évocation DT1 '+sc+'/7.'+(T==='DT1'&&ab!=='p'?' Ne pas étiqueter DT2 : anticorps et peptide C (mesuré à distance de la glucotoxicité, sinon sous-estimé).':''),'Un peptide C bas en pleine hyperglycémie peut être transitoire ; l’insuline est vitale en cas de cétose.');
- const lax=ck('fra')||ck('comorb')||ck('hypo')||a>=75,cib=pg?6.5:T!=='DT2'?(lax?8:7):lax?8:7;
- h+=card('i','Cible d’HbA1c ≤ '+fx(cib,1)+' %',pg?'Grossesse : contrôle strict.':lax?'Fragilité, comorbidité, âge ≥ 75 ans ou hypoglycémie sévère : éviter les hypoglycémies.':'Norme ; 6,5 % envisageable si diabète récent et sans hypoglycémie.','Équivalent sans HbA1c : glycémie moyenne ≈ '+fx((28.7*cib-46.7)/100,2)+' g/L, à jeun 0,80–'+(lax?'1,50':'1,30')+', postprandiale < 1,80.');
- const P=n('kg'),ins=T==='DT1'||T==='LADA';let rx;
- if(pg){rx=['Insuline d’emblée (NPH au coucher + rapide aux repas), avis spécialisé','Arrêter iSGLT2, aGLP-1, statine, IEC/ARA2 ; metformine selon avis','Fond d’œil au 1ᵉʳ trimestre']}
- else if(ins){rx=['Basal-bolus : '+(P?fx(P*.4)+'–'+fx(P*.6)+' U/j':'0,4–0,6 U/kg/j')+', basale 40–50 %','Glucagon à domicile, règles des jours de maladie','LADA : éviter les sulfamides']}
- else{const cat=mx>=3||hb>=10||$('cet').value==='p'||ck('amai'),mm=D.v>=60?3000:D.v>=45?2000:1000;
-  rx=[];if(cat)rx.push('Insuline basale d’emblée : 0,1–0,2 U/kg/j'+(P?' (≈ '+fx(P*.1)+'–'+fx(P*.2)+' U)':'')+', titration sur glycémie à jeun');
-  rx.push(D.v<30?'Metformine contre-indiquée (DFG < 30)':'Metformine 500 mg/j au repas, +500 mg par semaine'+(isNaN(D.v)?' (renseigner le DFG pour le plafond)':', maximum '+mm+' mg/j'));
-  if(D.v<60||ck('comorb'))rx.push('Si DFG < 60 : iSGLT2 + IEC/ARA2 (non listés localement : à vérifier)')}
- h+=card('a','Plan thérapeutique',pg?'Grossesse : branche dédiée.':'Mesures de mode de vie et éducation en parallèle (règle des 15 g, inspection des pieds).',ul(rx));
- return{head,html:h+terato()}}};
+function ds(x){const gj=n('gj'),ga=n('ga'),hg=n('hgpo'),jo=ck('jeune');let hb=n('hba1c'),h='',pos=[];
+ if(x.a<18)return{h:card('a','Adulte uniquement','Cette suite concerne les 18 ans et plus.')};
+ if(ck('interf')&&!isNaN(hb)){h+=card('a','HbA1c écartée','Interférence déclarée : glycémies seules retenues.');hb=NaN}
+ if(jo&&gj>=1.26)pos.push('glycémie à jeun '+fx(gj,2));if(hg>=2)pos.push('HGPO '+fx(hg,2));if(hb>=6.5)pos.push('HbA1c '+fx(hb,1)+' %');
+ const gal=Math.max(isNaN(ga)?0:ga,jo||isNaN(gj)?0:gj),mx=Math.max(isNaN(gj)?0:gj,isNaN(ga)?0:ga,isNaN(hg)?0:hg);
+ if(!mx&&isNaN(hb))return{h:card('i','Saisir une glycémie','À jeun, aléatoire ou HGPO ; HbA1c facultative.')};
+ let dm=false;
+ if(gal>=2&&ck('sym')||pos.length>=2||(pos.length===1&&ck('conf'))){dm=true;h+=card('a','Diabète confirmé',pos.join(' + ')||'Glycémie aléatoire ≥ 2,00 g/L avec symptômes.')}
+ else if(pos.length===1)h+=card('a','Diabète probable, à confirmer',pos[0]+' : second dosage veineux requis.');
+ else if((jo&&gj>=1)||hg>=1.4||hb>=5.7)h+=card('i','Prédiabète','Mode de vie, perte de poids de 5–7 %, contrôle annuel.');
+ else h+=card('o','Pas de critère de diabète','Valeurs sous les seuils.');
+ if(mx>=2.5)h+=card(mx>=3&&ck('sym')?'u':'a','Hyperglycémie marquée','Faire la cétonurie (étape Signes aigus).');
+ if(!dm)return{h,dm};
+ const sc=(x.a<35?1:0)+(x.bmi<25?1:0)+(ck('brutal')?1:0)+(ck('amai')?1:0)+($('cet').value==='p'?2:0)+(ck('autoimm')?1:0),ab=$('ab').value;let T=ab==='p'?(x.a>30&&!ck('brutal')&&!ck('amai')?'LADA':'DT1'):sc>=4?'DT1':'DT2';
+ h+=card(T==='DT2'?'i':'a','Typage : '+(T==='DT1'&&ab!=='p'?'DT1 ou diabète cétosique à explorer':T),'Score DT1 '+sc+'/7.'+(T==='DT1'&&ab!=='p'?' Ne pas étiqueter DT2 : anticorps et peptide C à distance de la glucotoxicité.':''));
+ const lax=ck('fra')||ck('comorb')||ck('hypo')||x.a>=75,cib=x.pg?6.5:lax?8:7;return{h,dm,T,cib,lax,mx,hb,sc}}
+def('gly','Diagnostic et typage',F('gj','Glycémie veineuse à jeun','g/L')+F('ga','Glycémie aléatoire','g/L')+F('hgpo','HGPO 2 h','g/L')+F('hba1c','HbA1c (facultative)','%')+KS([['jeune','Jeûne ≥ 8 h confirmé',1],['sym','Symptômes cardinaux (polyurie, polydipsie, amaigrissement)'],['conf','Même test déjà répété et anormal'],['interf','Interférence HbA1c : drépanocytose, anémie, carence martiale, transfusion, IRC terminale']])+'<h3>Typage</h3>'+KS([['brutal','Début brutal'],['amai','Amaigrissement marqué'],['autoimm','Maladie auto-immune associée']])+SEL('cet','Cétonurie',[['nr','Non recherchée'],['a','Absente'],['p','Présente']])+SEL('ab','Auto-anticorps',[['nf','Non dosés'],['n','Négatifs'],['p','Au moins un positif']]),x=>ds(x).h);
+def('aig_d','Signes aigus',KS([['a_hyp','Glycémie capillaire < 0,70 g/L ou malaise hypoglycémique'],['a_con','Conscience altérée'],['a_kus','Dyspnée de Kussmaul'],['a_vom','Vomissements'],['a_dab','Douleurs abdominales'],['a_deh','Déshydratation'],['a_obn','Obnubilation']]),
+ x=>{let h='';const hy=ck('a_hyp'),ac=(x.gj>=2||n('ga')>=2||x.dm)&&$('cet').value==='p'&&g(['a_kus','a_vom','a_dab','a_deh','a_obn'])>0;
+  if(hy)h+=card('u','Hypoglycémie','Conscient : 15–20 g de glucides rapides, recontrôle à 15 min. Conscience altérée : rien par la bouche, G30 % 50–100 mL IV, puis G10 % ; glucagon 1 mg IM sans voie IV. Chercher sulfamide, paludisme, alcool.');
+  if(ac)h+=card('u','Acidocétose présumée','Cétonurie + hyperglycémie + signes d’acidose. Remplissage NaCl 0,9 % 15–20 mL/kg la 1ʳᵉ heure, kaliémie avant insuline, insuline rapide 0,1 UI/kg/h après K⁺ > 3,5, chercher le facteur déclenchant (infection). Module Urgences détaillé : prochain lot.');
+  if(n('ga')>=6&&!ac&&ck('a_obn'))h+=card('u','Syndrome hyperosmolaire possible','Glycémie ≥ 6 g/L avec obnubilation sans cétose : réhydratation prudente, insuline 0,05 UI/kg/h, HBPM.');
+  return h||card('o','Pas de signe aigu','Poursuivre par l’examen des complications.')});
+def('cmp','Complications chroniques (examen)',F('mono','Points non perçus au monofilament 10 g (0 à 6)')+KS([['c_par','Paresthésies ou douleurs neuropathiques'],['c_def','Déformation du pied'],['c_ulc','Antécédent d’ulcère ou d’amputation'],['c_orth','Hypotension orthostatique'],['c_gas','Gastroparésie, constipation, diarrhée'],['c_ed','Dysfonction érectile']]),
+ x=>{const ne=n('mono')>=1||ck('c_par'),au=ck('c_orth')||ck('c_gas')||ck('c_ed'),pg=(ne||x.aomi)?((ck('c_ulc')||x.D<15)?3:(ck('c_def')||(ne&&x.aomi))?2:1):0;
+  return card(ne?'a':'o','Neuropathie périphérique : '+(ne?'probable':'non retrouvée'),ne?'Éliminer B12 (metformine), alcool, VIH, hypothyroïdie.':'')+(au?card('a','Neuropathie autonome possible','Orthostatisme, gastroparésie, dysfonction érectile.'):'')+card(pg>=2?'a':'i','Pied : catégorie IWGDF '+pg,['Examen annuel.','Examen tous les 6–12 mois, éducation.','Examen tous les 3–6 mois, podologie, chaussage adapté.','Examen tous les 1–3 mois, équipe spécialisée.'][pg])});
+def('syn_d','Synthèse et classification','',x=>{const d=ds(x);if(!d.dm)return d.h+card('i','Diabète non établi','Compléter le diagnostic.');return card(x.rk>=2?'a':'i','Résumé : '+(x.F?'femme':'homme')+' de '+fx(x.a)+' ans, '+d.T,'Complications : '+(x.ren?'rein ':'')+(n('mono')>=1?'nerfs ':'')+(x.aomi||x.cad||x.avc?'macrovasculaires ':'')+(ck('x_vis')?'rétine':'')+'. Risque cardiovasculaire <b>'+x.rl+'</b>. Cible d’HbA1c ≤ '+fx(d.cib,1)+' %.')+d.h});
+def('trt_d','Traitement et objectifs','',x=>{const d=ds(x);if(!d.dm)return card('a','Traitement après confirmation du diagnostic');const ins=d.T==='DT1'||d.T==='LADA',P=x.kg,mm=x.D>=60?3000:x.D>=45?2000:1000;let h,t,rx,w;
+ if(x.pg){t='Insuline d’emblée';rx=['NPH au coucher + rapide aux repas','Arrêter iSGLT2, aGLP-1, statine, IEC/ARA2 ; metformine selon avis'];w='Grossesse : l’insuline est le traitement de référence.'}
+ else if(ins){t='Insulinothérapie basal-bolus';rx=[(P?fx(P*.4)+'–'+fx(P*.6)+' U/j':'0,4–0,6 U/kg/j')+', basale 40–50 %','Glucagon à domicile ; éviter les sulfamides (LADA)'];w='Carence insulinique : les antidiabétiques oraux ne la compensent pas.'}
+ else{const cat=d.mx>=3||d.hb>=10||$('cet').value==='p'||ck('amai');rx=[];if(cat)rx.push('Insuline basale d’emblée 0,1–0,2 U/kg/j'+(P?' (≈ '+fx(P*.1)+'–'+fx(P*.2)+' U)':'')+', titration sur glycémie à jeun');rx.push(x.D<30?'Metformine contre-indiquée (DFG < 30)':'Metformine 500 mg/j au repas, +500 mg par semaine'+(isNaN(x.D)?'':', max '+mm+' mg/j'));if(x.ren||x.ic)rx.push('iSGLT2 + IEC/ARA2 (non listés : vérifier)');t=cat?'Insuline basale + metformine':'Metformine en première ligne';w=cat?'Catabolisme ou hyperglycémie ≥ 3 g/L : lever la glucotoxicité.':'Efficace, sûre, sans hypoglycémie ; B12 au long cours.'}
+ h=card('i',t,ul(rx)+'<p><b>Pourquoi :</b> '+w+'</p>')+adj(x)+hyg(x)+terato();
+ if(x.s>=130||x.alb)h+=card('i','IEC ou ARA2','Coversyl 5 mg ou Losar-Denk 50 mg','PA ≥ 130/80 ou albuminurie : néphroprotection.');
+ return h+card('i','Objectifs et suivi',ul(['HbA1c ≤ '+fx(d.cib,1)+' % (glycémie à jeun 0,80–'+(d.lax?'1,50':'1,30')+', postprandiale < 1,80 g/L)','PA < 130/80 ; LDL-c < '+fx(x.tc,2)+' g/L','HbA1c tous les 3 mois ; DFG + RAC, fond d’œil et pieds au moins annuels']))});
+def('dos','Dossier et PDF','<button type="button" id="pdf" class="pp">Enregistrer en PDF</button>',x=>`<h3>Dossier ${cur==='hta'?'HTA':'diabète'} · ${x.F?'femme':'homme'} ${fx(x.a)} ans · ${new Date().toLocaleDateString('fr-FR')}</h3>`+FL[cur].filter(k=>k!=='dos').map(k=>`<h3>${REG[k].t}</h3>`+REG[k].o(x)).join('').replace(/<details>/g,'<details open>'));

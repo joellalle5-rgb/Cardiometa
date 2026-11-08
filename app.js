@@ -1,17 +1,13 @@
-const M={hta:HTA,dm:DM};let cur='hta';
-const common=grp('Patient',two(F('age','Âge','ans'),`<label class="f">Sexe<select id="sex"><option value="M">Homme</option><option value="F">Femme</option></select></label>`)+two(F('kg','Poids','kg'),F('cm','Taille','cm'))+two(F('cr','Créatininémie'),`<label class="f">Unité<select id="cru"><option value="u">µmol/L</option><option value="m">mg/L</option><option value="d">mg/dL</option></select></label>`)+F('k','Kaliémie','mmol/L')+K('preg','Enceinte ou post-partum'),1);
-$('form').innerHTML=common+'<div id="m_hta">'+HTA.fields+'</div><div id="m_dm" hidden>'+DM.fields+'</div>';
-function go(m){cur=m;['hta','dm'].forEach(x=>{$('m_'+x).hidden=x!==m;$('t_'+x).classList.toggle('on',x===m)});run()}
-function run(){const r=M[cur].run(),D=dfg(),i=bmi(),s=[];
- if(!isNaN(n('age')))s.push(($('sex').value==='F'?'F ':'H ')+n('age')+' ans');if(!isNaN(i))s.push('IMC '+fx(i,1));if(!isNaN(D.v))s.push('DFG '+fx(D.v));if(!isNaN(n('pas')))s.push('PA '+n('pas')+'/'+fx(n('pad')));
- $('pb').textContent=s.join(' · ');$('res').innerHTML=r.html;$('bar').textContent=r.head+' · voir le détail'}
-$('t_hta').onclick=()=>go('hta');$('t_dm').onclick=()=>go('dm');
-$('bar').onclick=()=>$('sheet').classList.add('open');$('close').onclick=()=>$('sheet').classList.remove('open');
-document.addEventListener('input',run);document.addEventListener('change',run);run();
-// Installation (PWA)
-let dp=null;
-addEventListener('beforeinstallprompt',e=>{e.preventDefault();dp=e;$('inst').classList.add('on')});
-$('inst').onclick=async()=>{if(!dp)return;dp.prompt();await dp.userChoice;dp=null;$('inst').classList.remove('on')};
-addEventListener('appinstalled',()=>$('inst').classList.remove('on'));
+const FL={hta:['pt','mes','aigu','cv','rf','lab','syn_h','trt_h','dos'],dm:['pt','gly','aig_d','cmp','cv','rf','lab','syn_d','trt_d','dos']};let cur='hta',i=0;
+$('st').innerHTML=Object.keys(REG).map(id=>`<section id="s_${id}" class="st" hidden><h2>${REG[id].t}</h2><div class="fl">${REG[id].h}</div><div id="o_${id}"></div><div class="nv"><button type="button" data-a="b">Retour</button><button type="button" data-a="n">Continuer</button></div></section>`).join('');
+function show(){const f=FL[cur],id=f[i];document.querySelectorAll('.st').forEach(e=>e.hidden=e.id!=='s_'+id);$('pgb').style.width=(i+1)/f.length*100+'%';$('pgt').textContent='Étape '+(i+1)+'/'+f.length+' · '+REG[id].t;
+ const s=$('s_'+id);s.querySelector('[data-a=b]').hidden=i==0;s.querySelector('[data-a=n]').hidden=i==f.length-1;$('gjw').hidden=cur==='dm';run();scrollTo(0,0)}
+function run(){const x=X(),id=FL[cur][i],s=[];$('o_'+id).innerHTML=REG[id].o(x);
+ if(!isNaN(x.a))s.push((x.F?'F ':'H ')+x.a+' ans');if(!isNaN(x.bmi))s.push('IMC '+fx(x.bmi,1));if(!isNaN(x.D))s.push('DFG '+fx(x.D));if(!isNaN(x.s))s.push('PA '+x.s+'/'+fx(x.d));$('pb').textContent=s.join(' · ')}
+$('st').onclick=e=>{const a=e.target.dataset.a;if(a==='n'&&i<FL[cur].length-1){i++;show()}if(a==='b'&&i>0){i--;show()}if(e.target.id==='pdf')print()};
+$('t_hta').onclick=()=>{cur='hta';i=0;$('t_hta').classList.add('on');$('t_dm').classList.remove('on');show()};$('t_dm').onclick=()=>{cur='dm';i=0;$('t_dm').classList.add('on');$('t_hta').classList.remove('on');show()};
+document.addEventListener('input',run);document.addEventListener('change',run);show();
+let dp=null;addEventListener('beforeinstallprompt',e=>{e.preventDefault();dp=e;$('inst').classList.add('on')});
+$('inst').onclick=async()=>{if(!dp)return;dp.prompt();await dp.userChoice;dp=null;$('inst').classList.remove('on')};addEventListener('appinstalled',()=>$('inst').classList.remove('on'));
 if(/iphone|ipad/i.test(navigator.userAgent)&&!navigator.standalone)$('ios').style.display='block';
 if('serviceWorker'in navigator&&location.protocol.startsWith('http'))addEventListener('load',()=>navigator.serviceWorker.register('sw.js').catch(()=>{}));

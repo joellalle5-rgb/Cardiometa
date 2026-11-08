@@ -1,41 +1,26 @@
-const HTA={fields:
-grp('Tension',two(F('pas','PAS cabinet','mmHg'),F('pad','PAD cabinet','mmHg'))+two(F('pas2','PAS 2ᵉ consult.','mmHg'),F('pad2','PAD 2ᵉ consult.','mmHg'))+two(F('ams','PAS automesure','mmHg'),F('amd','PAD automesure','mmHg'))+KS([['s_neuro','Céphalée sévère, confusion, convulsion ou déficit'],['s_cor','Douleur thoracique ou dorsale brutale'],['s_dys','Dyspnée ou OAP'],['s_vis','Trouble visuel brutal'],['s_ren','Oligo-anurie']]),1)+
-grp('Terrain',KS([['h_ic','Insuffisance cardiaque (clinique)'],['h_cad','Coronaropathie'],['h_fa','Fibrillation atriale'],['h_avc','AVC ou AIT'],['h_dm','Diabète'],['h_mrc','Maladie rénale connue'],['t_noir','Origine africaine subsaharienne'],['t_fra','Âge ≥ 80 ans ou fragile'],['t_ortho','Hypotension orthostatique'],['t_asth','Asthme ou BPCO sévère'],['t_brad','Bradycardie < 50/min ou BAV'],['t_gout','Goutte'],['t_ang','Angiœdème sous IEC'],['t_toux','Toux sous IEC']])),
-run(){const s=n('pas'),d=n('pad'),a=n('age'),pg=ck('preg'),D=dfg();let h=D.w?card('a','Créatinine',D.w):'';
- if(a<18)return{head:'Adulte uniquement',html:card('a','Adulte uniquement','Cette suite s’adresse aux patients de 18 ans et plus.')};
- if(isNaN(s)||isNaN(d))return{head:'Saisir la PA',html:h+card('i','Saisir la PA','Le verdict apparaît dès que PAS et PAD sont saisies.')};
- // Grossesse : alerte indépendante de la confirmation (case unique partagée)
- if(pg&&(s>=160||d>=110))return{head:'Prééclampsie sévère possible',html:card('u','Prééclampsie sévère possible','PA ≥ 160/110 en grossesse : urgence obstétricale. Nicardipine IV (Loxen), sulfate de magnésium, avis obstétrical immédiat.')};
- const L=s>=180||d>=110?4:s>=160||d>=100?3:s>=140||d>=90?2:s>=120||d>=70?1:0,
- sym=['s_neuro','s_cor','s_dys','s_vis','s_ren'].some(ck),off=s>=140||d>=90,
- org=ck('h_ic')||ck('h_cad')||ck('h_avc')||ck('h_mrc')||D.v<60,am=isNaN(n('ams'))?null:(n('ams')>=135||n('amd')>=85),
- conf=n('pas2')>=140||n('pad2')>=90||(off&&am===true)||(L==4&&(sym||org)),
- N=['PA normale','PA élevée, pas encore HTA','HTA grade 1','HTA grade 2','HTA grade 3'][L];
- let head=N;
- if(L==4&&sym){head='Urgence hypertensive probable';h+=card('u',head,'PA ≥ 180/110 avec atteinte d’organe aiguë : hospitaliser, nicardipine IV (Loxen), PAM −25 % en 1 h au maximum.')}
- else if(L==4)h+=card('a','Poussée hypertensive',`Pas d’atteinte aiguë déclarée : chercher une atteinte d’organe, reprendre le traitement oral, pas de baisse brutale, revoir sous 24–72 h.`);
- h+=card(L>=2?'a':L==1?'i':'o',N,s>=140&&d<90?'Systolique isolée.':'');
- if(!off)return{head,html:h+card(am===true?'a':'o',am===true?'HTA masquée possible':'Pas d’HTA à ce stade',am===true?'Automesure élevée : confirmer par MAPA.':'Hygiène de vie et contrôle annuel.')};
- if(am===false)return{head:'HTA de la blouse blanche probable',html:h+card('i','HTA de la blouse blanche probable','Automesure normale : surveillance annuelle ; traiter seulement si atteinte d’organe ou risque très élevé.')};
- if(!conf)return{head:head+' — à confirmer',html:h+card('a','À confirmer avant le diagnostic','Sans automesure ni MAPA : 2ᵉ consultation sous '+(L==4?'quelques jours':L==3?'1–2 semaines':'2–4 semaines')+'. Saisir la 2ᵉ consultation.')};
- h+=card('a','HTA confirmée');
- const ic=ck('h_ic'),cad=ck('h_cad'),fa=ck('h_fa'),fra=ck('t_fra')||a>=80,ara=ck('t_ang')||ck('t_toux'),bb=ck('t_asth')||ck('t_brad')?null:'Bisoprolol 2,5 mg, 1 cp/j',
- th=(ck('t_gout')||n('k')<3.5)?null:'Fludex LP 1,5 mg le matin (indapamide ; l’Esidrex/HCTZ n’est qu’un repli)',
- ras=ara?'Irbésartan Biogaran 150 mg, 1 cp/j':'Coversyl 5 mg, 1 cp/j',ccb='Amep 5 mg (ou Amlo-Denk, Lopine), 1 cp/j',
- low=!org&&!ck('h_dm')&&L==2,cond=low&&!pg;let reg,rx=[],av=[];
- if(pg){reg='Méthyldopa ou nifédipine retard';rx=['Methyldopa-GH 500 mg : 250–500 mg ×2–3/j','Nifedi-Denk retard 20 mg : 1 cp ×2/j (alternative)'];av.push('IEC, ARA2 et spironolactone contre-indiqués','Cible 110–135/85 ; aspirine 100–150 mg dès 12 SA si risque de prééclampsie')}
- else if(ic){reg='Bloqueur du SRA + bêtabloquant + spironolactone';rx=[ara?'Tareg 80 mg (valsartan), 1 cp/j':'Coversyl 5 mg, 1 cp/j (ou valsartan : Tareg 80 mg)',bb||'Bêtabloquant contre-indiqué : avis cardiologique','Spironolactone Biogaran 50 mg : 25–50 mg/j ; furosémide 40 mg si congestion'];av.push('Vérapamil, diltiazem et amlodipine seule : à éviter si FEVG réduite (typer la FE dès que possible)')}
- else if(cad||fa){reg='Bloqueur du SRA + '+(bb?'bêtabloquant':'inhibiteur calcique');rx=[ras,bb||ccb]}
- else if(s>=140&&d<90&&a>=65){reg='Inhibiteur calcique + '+(th?'thiazidique-like':'bloqueur du SRA');rx=[ccb,th||ras]}
- else if(ck('t_noir')){reg='Inhibiteur calcique + '+(th?'thiazidique-like':'bloqueur du SRA');rx=[ccb,th||ras];if(org||ck('h_dm'))rx.push('Ajouter un bloqueur du SRA (diabète ou atteinte rénale) : '+ras)}
- else{reg='Bloqueur du SRA + inhibiteur calcique';rx=[ras,ccb]}
- if(!pg&&!ic&&!cad&&!fa&&(fra||ck('t_ortho'))){reg='Monothérapie progressive, demi-dose';rx=[(a>=65||ck('t_noir'))?ccb:ras]}
- if(D.v<30)av.push('DFG < 30 : furosémide plutôt que thiazidique ; K⁺ et créatinine à 1 semaine sous SRA');
- if(n('k')>5)av.push('K⁺ > 5 : différer SRA et spironolactone, chercher la cause');
- if(ck('t_asth'))av.push('Bêtabloquant (asthme/BPCO sévère)');if(ck('t_brad'))av.push('Bêtabloquant, diltiazem, vérapamil (bradycardie/BAV)');
- if(ck('t_gout'))av.push('Thiazidiques (goutte)');if(ck('t_ang'))av.push('IEC (angiœdème)');av.push('IEC + ARA2 ensemble : jamais');
- h+=card('i',(cond?'Ordonnance conditionnelle : ':'')+reg,cond?'Grade 1 à faible risque : mesures d’hygiène de vie 3 mois, puis traitement seulement si PA ≥ 140/90 persistante.':'',ul(rx)+'<p>Si PA > cible à 3–4 semaines : ajouter la 3ᵉ classe ; résistance (3 classes dont diurétique) : spironolactone 25–50 mg, après vérification de l’observance, des AINS, du sel et du SAHS.</p>');
- h+=card('a','À éviter chez ce patient','',ul(av));
- h+=terato();
- h+=card('i','Cible et suivi',pg?'PA 110–135/85.':fra?'PAS 130–139, éviter l’hypotension orthostatique.':'PAS 120–129 si bien toléré (au minimum < 140), PAD 70–79.','Réévaluer à 2–4 semaines puis tous les 3 mois jusqu’à la cible. Créatinine et K⁺ 1–2 semaines après SRA, diurétique ou spironolactone ; arrêt si créatinine +30 % ou K⁺ > 5,5.');
- return{head:head+' confirmée',html:h}}};
+function hs(x){const L=x.s>=180||x.d>=110?4:x.s>=160||x.d>=100?3:x.s>=140||x.d>=90?2:x.s>=120||x.d>=70?1:0,off=x.s>=140||x.d>=90,am=isNaN(n('ams'))?null:(n('ams')>=135||n('amd')>=85),sym=g(['s_neuro','s_cor','s_dys','s_vis','s_ren'])>0,
+ conf=n('pas2')>=140||n('pad2')>=90||(off&&am===true)||(L==4&&(sym||x.org.length||x.cvd.length)),stt=!off?(am===true?'m':'n'):am===false?'b':conf?'ok':'?';
+ return{L,off,am,sym,stt,N:['PA normale','PA élevée, pas encore HTA','HTA grade 1','HTA grade 2','HTA grade 3'][L]}}
+def('mes','Mesure de la PA',two(F('pas','PAS cabinet','mmHg'),F('pad','PAD cabinet','mmHg'))+'<div id="w2">'+two(F('pas2','PAS 2ᵉ consult.','mmHg'),F('pad2','PAD 2ᵉ consult.','mmHg'))+'</div>'+two(F('ams','PAS automesure','mmHg'),F('amd','PAD automesure','mmHg'))+'<p class="nt">Repos assis 5 min, brassard adapté, 2–3 mesures, aux deux bras à la 1ʳᵉ consultation.</p>',
+ x=>{$('w2').hidden=!(x.s>=140||x.d>=90);if(isNaN(x.s)||isNaN(x.d))return card('i','Saisir la PA');const H=hs(x);let h=card(H.L>=2?'a':H.L?'i':'o',H.N,x.s>=140&&x.d<90?'Systolique isolée.':'');
+  h+={n:card('o','Pas d’HTA à ce stade','Hygiène de vie, contrôle annuel.'),m:card('a','HTA masquée possible','Automesure élevée : confirmer par MAPA.'),b:card('i','HTA de la blouse blanche probable','Automesure normale : surveillance annuelle.'),'?':card('a','À confirmer avant le diagnostic','Sans automesure : 2ᵉ consultation sous '+(H.L==4?'quelques jours':H.L==3?'1–2 semaines':'2–4 semaines')+'. Saisir la 2ᵉ consultation.'),ok:card('u'.replace('u','a'),'HTA confirmée','Poursuivre : signes aigus, examen, bilan.')}[H.stt];return h});
+def('aigu','Signes aigus',KS([['s_neuro','Céphalée sévère, confusion, convulsion, déficit'],['s_cor','Douleur thoracique ou dorsale brutale'],['s_dys','Dyspnée, œdème aigu du poumon'],['s_vis','Trouble visuel brutal'],['s_ren','Oligo-anurie, hématurie macroscopique']]),
+ x=>{const H=hs(x);if(x.pg&&(x.s>=160||x.d>=110))return card('u','Prééclampsie sévère possible','PA ≥ 160/110 en grossesse : urgence obstétricale, nicardipine IV (Loxen), sulfate de magnésium.');
+  if(H.L==4&&H.sym)return card('u','Urgence hypertensive probable','PA ≥ 180/110 avec atteinte aiguë : hospitaliser, nicardipine IV (Loxen), baisse de la PAM ≤ 25 % en 1 h.');
+  if(H.L==4)return card('a','Poussée hypertensive','Sans atteinte aiguë : reprendre le traitement oral, pas de baisse brutale, revoir sous 24–72 h.');
+  return H.sym?card('a','Signe aigu isolé','PA < 180/110 : chercher une autre cause.'):card('o','Pas de signe aigu','Poursuivre par l’examen cardiovasculaire.')});
+def('syn_h','Synthèse et classification','',x=>{const H=hs(x),ph=[];if(x.a<40)ph.push('HTA du sujet jeune : secondaire jusqu’à preuve du contraire');if(x.s>=140&&x.d<90&&x.a>=65)ph.push('systolique isolée du sujet âgé');if(x.obAb||x.bmi>=30||smet(x).n>=3)ph.push('profil métabolique');if(x.ic||x.hvg)ph.push('retentissement cardiaque');if(x.ren)ph.push('retentissement rénal');if(ck('t_noir'))ph.push('sujet africain');
+ const rk=Math.max(x.rk,H.L==4?2:0);return card(rk>=2?'a':'i','Résumé : '+(x.F?'femme':'homme')+' de '+fx(x.a)+' ans, '+H.N.toLowerCase(),'Atteintes d’organe : '+(x.org.length?x.org.join(', '):'aucune retrouvée')+'. Maladie cardiovasculaire : '+(x.cvd.length?x.cvd.join(', '):'aucune')+'. Risque cardiovasculaire global : <b>'+['faible','modéré','élevé','très élevé'][rk]+'</b>.'+(ph.length?' Phénotype : '+ph.join(' ; ')+'.':''))});
+def('trt_h','Traitement et objectifs',K('t_noir','Origine africaine subsaharienne')+KS([['t_fra','Âge ≥ 80 ans ou fragile'],['t_ortho','Hypotension orthostatique'],['t_asth','Asthme ou BPCO sévère'],['t_brad','Bradycardie < 50/min ou BAV'],['t_gout','Goutte'],['t_ang','Angiœdème sous IEC'],['t_toux','Toux sous IEC']]),
+ x=>{const H=hs(x);let h='';if(H.stt!=='ok')h+=card('a','Pas de traitement médicamenteux tant que l’HTA n’est pas confirmée','Revenir à l’étape Mesure.');
+  else{const fra=ck('t_fra')||x.a>=80,ara=ck('t_ang')||ck('t_toux'),bb=ck('t_asth')||ck('t_brad')?null:'Bisoprolol 2,5 mg, 1 cp/j',th=(ck('t_gout')||n('k')<3.5)?null:'Fludex LP 1,5 mg le matin (indapamide ; Esidrex/HCTZ en repli seulement)',ras=ara?'Irbésartan Biogaran 150 mg, 1 cp/j':'Coversyl 5 mg, 1 cp/j',ccb='Amep 5 mg (ou Amlo-Denk, Lopine), 1 cp/j',low=!x.org.length&&!x.cvd.length&&!x.dm&&H.L==2&&!x.pg;let t,rx,w;
+   if(x.pg){t='Méthyldopa ou nifédipine retard';rx=['Methyldopa-GH 500 mg : 250–500 mg ×2–3/j','Nifedi-Denk retard 20 mg : 1 cp ×2/j'];w='IEC, ARA2 et spironolactone sont contre-indiqués (tératogènes). Cible 110–135/85.'}
+   else if(x.ic){t='Bloqueur du SRA + bêtabloquant + spironolactone';rx=[ara?'Tareg 80 mg (valsartan), 1 cp/j':'Coversyl 5 mg, 1 cp/j (ou Tareg 80 mg)',bb||'Bêtabloquant contre-indiqué : avis cardiologique','Spironolactone Biogaran 50 mg : 25–50 mg/j ; furosémide 40 mg si congestion'];w='Ces classes réduisent la mortalité de l’IC à FE réduite ; le diurétique traite la congestion. Éviter vérapamil, diltiazem et amlodipine seule si FE basse.'}
+   else if(x.cad||x.fa){t='SRA + '+(bb?'bêtabloquant':'inhibiteur calcique');rx=[ras,bb||ccb];w='Bêtabloquant : angor, contrôle de la fréquence en FA.'}
+   else if(x.s>=140&&x.d<90&&x.a>=65){t='Inhibiteur calcique + '+(th?'thiazidique-like':'SRA');rx=[ccb,th||ras];w='Rigidité artérielle du sujet âgé : cette association est la plus efficace.'}
+   else if(ck('t_noir')){t='Inhibiteur calcique + '+(th?'thiazidique-like':'SRA');rx=[ccb,th||ras];if(x.org.length||x.dm)rx.push('Ajouter un SRA (diabète ou atteinte rénale) : '+ras);w='Meilleure réponse aux inhibiteurs calciques et diurétiques ; SRA si indication associée.'}
+   else{t='SRA + inhibiteur calcique';rx=[ras,ccb];w='Association efficace, bien tolérée, protection d’organe.'}
+   if(!x.pg&&!x.ic&&!x.cad&&!x.fa&&(fra||ck('t_ortho'))){t='Monothérapie progressive, demi-dose';rx=[(x.a>=65||ck('t_noir'))?ccb:ras];w='Sujet fragile ou orthostatique : baisse progressive, pas de bithérapie d’emblée.'}
+   h+=card('i',(low?'Ordonnance conditionnelle : ':'')+t,(low?'<p>Grade 1 à faible risque : hygiène de vie 3 mois, traitement seulement si PA ≥ 140/90 persistante.</p>':'')+ul(rx)+'<p><b>Pourquoi :</b> '+w+'</p><p>PA > cible à 3–4 semaines : 3ᵉ classe ; résistance : spironolactone 25–50 mg après vérification de l’observance, AINS, sel, SAHS.</p>');
+   const av=['IEC + ARA2 ensemble : jamais'];if(ck('t_asth'))av.push('bêtabloquant (asthme/BPCO)');if(ck('t_brad'))av.push('bêtabloquant, diltiazem, vérapamil');if(ck('t_gout'))av.push('thiazidiques (goutte)');if(ck('t_ang'))av.push('IEC (angiœdème)');if(x.D<30)av.push('thiazidiques (DFG < 30 : furosémide)');if(n('k')>5)av.push('SRA et spironolactone (K⁺ > 5)');h+=card('a','À éviter chez ce patient',ul(av))+terato()}
+  return h+adj(x)+hyg(x)+card('i','Objectifs et suivi',ul([x.pg?'PA 110–135/85':ck('t_fra')||x.a>=80?'PAS 130–139, sans hypotension orthostatique':'PAS 120–129 si bien toléré (au minimum < 140), PAD 70–79','LDL-c < '+fx(x.tc,2)+' g/L','Réévaluer à 2–4 semaines puis tous les 3 mois ; créatinine et K⁺ 1–2 semaines après SRA, diurétique ou spironolactone (arrêt si créatinine +30 % ou K⁺ > 5,5)']))});

@@ -1,6 +1,6 @@
 const $=i=>document.getElementById(i),n=i=>{const e=$(i);if(!e||e.value==='')return NaN;return parseFloat(e.value.replace(',','.'))},ck=i=>!!($(i)&&$(i).checked),fx=(x,d=0)=>isNaN(x)?'—':x.toFixed(d).replace('.',',');
 // u=urgence, a=à agir, i=info, o=ok ; why = justification repliable
-const card=(k,t,b='',why='')=>`<div class="c ${k}"><b>${t}</b>${b?`<p>${b}</p>`:''}${why?`<details><summary>Pourquoi</summary><p>${why}</p></details>`:''}</div>`;
+const card=(k,t,b='',why='')=>`<div class="c ${k}"><b>${t}</b>${b?`<div class="b">${b}</div>`:''}${why?`<details><summary>Pourquoi</summary><p>${why}</p></details>`:''}</div>`;
 const ul=a=>'<ul>'+a.map(x=>`<li>${x}</li>`).join('')+'</ul>';
 const F=(id,l,u='')=>`<label class="f">${l}<span><input id="${id}" inputmode="decimal" autocomplete="off">${u?`<i>${u}</i>`:''}</span></label>`;
 const K=(id,l,on)=>`<label class="k"><input type="checkbox" id="${id}"${on?' checked':''}><span>${l}</span></label>`;
