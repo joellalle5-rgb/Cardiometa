@@ -58,11 +58,47 @@ function CLASSE(M,x,OP){const D=isNaN(x.D)?99:x.D,rec=[],avd=[],ci=[],oth=[];
 function RENDER(x,M,OP){const D=isNaN(x.D)?99:x.D,
  oc=e=>{const P=OP[e.k],r=P.ren(D,x);return `<div class="c ${P.loc?'o':'i'}"><label class="k"><input type="checkbox" data-opt="${e.k}"${RET.has(e.k)?' checked':''}><span><b>${P.n}</b></span></label><div class="b"><span class="bd ${P.loc?'ok':'no'}">${P.loc?'Disponible : '+P.loc:'Non listé localement'+(P.alt?' ('+P.alt+')':'')}</span><ul>${e.w.filter(Boolean).map(w=>'<li>'+w+'</li>').join('')}</ul>${e.av.length?'<p><b>Attention :</b> '+e.av.join(' ; ')+'</p>':''}<p><b>Posologie</b> (à vérifier avec le RCP) : ${P.dose}</p>${r[1]?'<p><b>Rénal / biologie :</b> '+r[1]+'</p>':''}</div><details><summary>Précautions</summary><p>${P.pre}</p></details></div>`};
  let h='<h3>Profils détectés (toucher pour exclure ou inclure)</h3><div class="chips">'+M.all.map(p=>`<button type="button" class="chip${OFF.has(p.id)?'':' on'}" data-pf="${p.id}">${p.n}</button>`).join('')+'</div>';
+ h+=STRAT(x,M,OP);
  if(M.loc.length)h+=card('o','Plan réaliste avec vos médicaments disponibles',ul(M.loc.map(e=>OP[e.k].n)));
- h+='<h3>Options recommandées</h3>'+M.rec.map(oc).join('');
+ h+='<h3>Options et bénéfices selon le profil</h3>'+M.rec.map(oc).join('');
  if(M.avd.length)h+=card('a','À éviter ou moins adaptées',ul(M.avd.map(e=>'<b>'+OP[e.k].n+'</b> : '+e.av.join(' ; '))));
  if(M.ci.length)h+=card('u','Contre-indiquées selon les données',ul(M.ci.map(e=>'<b>'+OP[e.k].n+'</b> : '+OP[e.k].ren(D,x)[1])));
  if(M.oth.length)h+='<details><summary>Autres options (priorité faible)</summary>'+M.oth.map(oc).join('')+'</details>';
  return h}
 const conflits=()=>{const c=[],h=k=>RET.has(k);if(h('dpp4')&&(h('glp')||h('tirz')||ck('tm_glp')))c.push('iDPP4 + aGLP-1 : association à éviter');if(ck('tm_dpp4')&&(h('glp')||h('tirz')))c.push('iDPP4 en cours : l’arrêter avant un aGLP-1');if(h('iec')&&h('ara'))c.push('IEC + ARA2 : jamais');return c.length?card('u','Association déconseillée',ul(c)):''};
 const ordRet=x=>{const P=Object.assign({},OPD,OPH);return RET.size?card('o','Traitement retenu',ul([...RET].filter(k=>P[k]).map(k=>'<b>'+P[k].n+'</b> : '+P[k].dose+' (à vérifier avec le RCP)')))+conflits():card('a','Aucune option retenue','Cochez les options à l’étape Traitement.')};
+(()=>{const s=document.createElement('style');s.textContent='.c b{display:inline;font-size:inherit}.c>b{display:block;font-size:17px}';document.head.appendChild(s)})();
+document.addEventListener('click',e=>{const s=e.target.closest&&e.target.closest('[data-strat]');if(!s)return;RET.clear();s.dataset.strat.split(',').forEach(k=>k&&RET.add(k));run()});
+const SPCH={'ccb+ras':{iec:'Serperam 5/5, 5/10, 10/5, 10/10 (périndopril/amlodipine)',ara:'Raasar-AM 50/5, Zyltan AM 50/5, Telmikaa AM 40/5, Telmis-A 40/5, Sartex 5/160'},'ras+thz':{iec:'Serderax 5/1,25 (périndopril/indapamide), Ramithiazide 5/12,5',ara:'Coaprozar 150/12,5, Co-Losar 50/12,5, Telmis-H 40/12,5, Cotareg 160/25'},'ccb+thz':{all:'Natrixam 1,5/5, Amlopamide 5/1,5 (amlodipine/indapamide)'},'ccb+ras+thz':{iec:'Serinxam 5/1,25/5 (périndopril/indapamide/amlodipine)',ara:'Sartex HCT 5/160/12,5, Cardiovalam H'},'bb+ras':{iec:'Cosyrel 5/5 (périndopril/bisoprolol)',ara:'aucune association ARA2-bêtabloquant listée'},'dpp4+metf':{all:'Galvus Met 50/500, 50/850, 50/1000 (vildagliptine/metformine)'},'metf+su':{all:'Glucovance (glibenclamide/metformine), Glimeryl-M, Metride-2 (glimépiride/metformine), vigilance hypoglycémie'}};
+function STRAT(x,M,OP){const dm=OP===OPD,H=dm?ds(x):hs(x);if(dm&&(!H.dm||x.pg||H.T!=='DT2'))return'';
+ const ban=new Set(M.avd.concat(M.ci).map(e=>e.k)),
+ FAM=dm?[['metf',['metf']],['glp',['glp','tirz']],['sglt',['sglt']],['dpp4',['dpp4']],['su',['su']],['tzd',['tzd']],['insb',['insb']]]:[['ras',['iec','ara']],['ccb',['ccb']],['thz',['thz']],['bb',['bb']],['mra',['mra']],['loop',['loop']],['mdopa',['mdopa']],['nife',['nife']]],
+ sc=k=>M.o[k]&&!ban.has(k)?M.o[k].s:0,
+ pick=(ks,lc)=>ks.filter(k=>M.o[k]&&!ban.has(k)&&(!lc||OP[k].loc)).sort((a,b)=>sc(b)-sc(a))[0],
+ ranked=lc=>FAM.map(f=>{const k=pick(f[1],lc);return k?{f:f[0],k,s:sc(k)}:null}).filter(o=>o&&o.s>=1).sort((a,b)=>b.s-a.s),
+ CUR=dm?[['metf','tm_metf'],['su','tm_su'],['dpp4','tm_dpp4'],['sglt','tm_sglt'],['glp','tm_glp'],['insb','tm_ins']]:[['ras','tm_ras'],['ccb','tm_ccb'],['thz','tm_thz'],['bb','tm_bb'],['mra','tm_mra']],
+ cur=CUR.filter(c=>ck(c[1])).map(c=>c[0]),pf=id=>M.act.some(p=>p.id===id),NM=['','Monothérapie','Bithérapie','Trithérapie','Quadrithérapie'];
+ let n,why=[],sev=false;
+ if(dm){const hb=isNaN(x.hbact)?H.hb:x.hbact,gap=hb-H.cib,cr=pf('asc')||pf('ic')||pf('mrc'),ob=pf('ob'),yg=pf('early');sev=pf('sev')||ck('amai');
+  if(cur.length){if(isNaN(hb)){n=cur.length;why.push('Saisir l’HbA1c actuelle (étape Contexte) : sans elle, on ne peut pas décider d’intensifier.')}else if(gap<=0){n=cur.length;why.push('HbA1c '+fx(hb,1)+' % ≤ cible '+fx(H.cib,1)+' % : poursuivre, réévaluer à 3–6 mois.')}else{n=Math.min(cur.length+1,4);why.push('HbA1c '+fx(hb,1)+' % > cible '+fx(H.cib,1)+' % sous '+cur.length+' classe(s) : intensifier d’un cran après vérification de l’observance.')}}
+  else{n=(cr||ob||yg||gap>1.5||(isNaN(hb)&&H.mx>=2.5)||sev)?2:1;if(cr)why.push('profil cardiovasculaire ou rénal : une classe à bénéfice cardiorénal est indiquée indépendamment de l’HbA1c et de la metformine');if(ob)why.push('obésité : privilégier une classe à effet pondéral');if(yg)why.push('DT2 avant 40 ans : évolutivité forte, traitement précoce');if(gap>1.5)why.push('HbA1c supérieure de plus de 1,5 point à la cible');if(isNaN(hb)&&H.mx>=2.5)why.push('HbA1c absente et glycémie ≥ 2,50 g/L : bithérapie d’emblée raisonnable');if(sev)why.push('hyperglycémie sévère ou catabolisme : insuline basale d’emblée');if(n===1)why.push('aucun critère d’association d’emblée : monothérapie, réévaluation à 3 mois')}}
+ else{const fra=ck('t_fra')||x.a>=80||ck('t_ortho'),hi=x.dm||x.ren||x.cad||x.avc,tS=x.pg?136:fra?140:hi?130:140,tD=x.pg?86:fra?90:hi?80:90,unc=x.s>=tS||x.d>=tD;
+  if(x.pg){n=1;why.push('Grossesse : monothérapie progressive (méthyldopa ou nifédipine), association des deux si besoin. IEC, ARA2 et spironolactone contre-indiqués.')}
+  else if(cur.length){if(unc){n=Math.min(cur.length+1,4);why.push('PA '+fx(x.s)+'/'+fx(x.d)+' au-dessus de la cible sous '+cur.length+' classe(s) : passer à '+NM[n].toLowerCase()+(n>=4?' (spironolactone en 4ᵉ classe)':'')+', après vérification de l’observance, de la mesure hors cabinet, des AINS, du sel et de l’apnée du sommeil.')}else{n=cur.length;why.push('PA à la cible : poursuivre le traitement actuel.')}}
+  else if(fra){n=1;why.push('Sujet fragile, très âgé ou orthostatique : monothérapie progressive à demi-dose, puis bithérapie à faible dose si besoin.')}
+  else if(H.L==2&&x.rk<=1&&!x.org.length&&!x.dm){n=1;why.push('Grade 1 à risque faible ou modéré : hygiène de vie 3 mois (jusqu’à 6), puis monothérapie si PA ≥ 140/90 persistante.')}
+  else{n=2;why.push('HTA confirmée'+(H.L>=3?' de grade '+(H.L-1):'')+(x.rk>=2?', risque cardiovasculaire '+x.rl:'')+(x.org.length?', atteinte d’organe':'')+' : association de deux classes d’emblée, idéalement en comprimé unique (meilleure observance), selon ESC 2024 et AHA/ACC 2025.')}}
+ const build=lc=>{const R=ranked(lc);let base=[];cur.forEach(f=>{const ks=FAM.find(a=>a[0]===f)[1];base.push({f,k:pick(ks,lc)||ks[0],s:0})});
+  if(dm&&!cur.length&&n>=2)(sev?['insb','metf']:['metf']).forEach(f=>{const o=R.find(r=>r.f===f);if(o)base.push(o);else if(f==='metf'&&!ban.has('metf')&&(!lc||OP.metf.loc))base.push({f:'metf',k:'metf',s:1})});
+  const cand=R.filter(o=>!base.some(b=>b.f===o.f));if(dm&&cur.length>=3&&!R.some(o=>o.f==='insb')&&!ban.has('insb'))cand.push({f:'insb',k:'insb',s:1});
+  const need=Math.max(n-base.length,0),main=base.concat(cand.slice(0,need)),alts=[];
+  if(need>0)for(let j=1;j<=2;j++)if(cand.length>need-1+j)alts.push(base.concat(cand.slice(0,need-1)).concat(cand[need-1+j]));
+  return{main,alts,next:cand[need]}},
+ BEN=k=>{const w=M.o[k]?M.o[k].w:[],a=w.filter(t=>!/^Socle/.test(t)),b=a.length?a:w;return b.slice(0,3).join(' ; ')},
+ spc=l=>{const fs=l.map(o=>o.f).sort().join('+'),e=SPCH[fs];return e?(e.all||(l.some(o=>o.k==='ara')?e.ara:e.iec)):'comprimés séparés'},
+ combo=(lab,l,ok)=>`<div class="c ${ok?'o':'i'}"><b>${lab} : ${l.map(o=>OP[o.k].n).join(' + ')}</b><ul>${l.map(o=>'<li><b>'+OP[o.k].n+'</b> : '+(BEN(o.k)||'selon indication')+(OP[o.k].loc?'':' <i>(non listé localement)</i>')+(M.avd.some(e=>e.k===o.k)?' <i>(à reconsidérer : voir les précautions)</i>':'')+'</li>').join('')}</ul><p><b>Comprimé unique disponible :</b> ${spc(l)}</p><button type="button" class="bt" data-strat="${l.map(o=>o.k).join(',')}">Choisir cette association</button></div>`;
+ const B=build(false),sig=l=>l.map(o=>o.k).sort().join();
+ let h=`<div class="c a"><b>Stratégie recommandée : ${NM[n]||'Poursuite'}</b><div class="b"><ul>${why.map(w=>'<li>'+w+'</li>').join('')}</ul><p class="nt">Moteur v7 · ${dm?'ADA/EASD 2026':'ESC 2024, AHA/ACC 2025'} ; la décision vous appartient : choisissez une proposition ou cochez librement ci-dessous.</p></div></div>`;
+ h+=combo('Proposition',B.main,true)+B.alts.map((a,i)=>combo('Alternative '+(i+1),a,false)).join('');
+ if(dm){const L=build(true);if(sig(L.main)!==sig(B.main))h+=combo('Version réaliste avec vos médicaments disponibles',L.main,true)}
+ return h+`<div class="c i"><b>Réévaluation</b><div class="b"><p>${dm?'HbA1c à 3 mois':'PA à 2–4 semaines'} ; si la cible n’est pas atteinte${B.next?' : ajouter '+OP[B.next.k].n:' : avis spécialisé'}.</p></div></div>`}
